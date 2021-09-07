@@ -3,7 +3,6 @@ pipeline {
 	tools {
 		maven 'maven LATEST'
 		ant 'ant latest'
-		jdk 'AIX64 JDK8'
 	} 
 		environment {
         SCM_CREDENTIALS = credentials('Jenkins_GIT')
