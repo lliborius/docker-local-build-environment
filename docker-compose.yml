@@ -55,16 +55,7 @@ services:
       - ${DC_HOSTNAME}:${DC_HOSTIP}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-# ------------------------------------------------------------------------------
-#  registry:
-#    container_name: registry
-#    image: registry:2.7.1
-#    network_mode: "host"
-#    ports:
-#      - 5000:5000
-#    volumes:
-#      - ${DC_BASE_DATA_DIR}/docker-registry/config.yml:/etc/docker/registry/config.yml
-#      - ${DC_BASE_DATA_DIR}/docker-registry/images:/var/lib/registry
+
 # ------------------------------------------------------------------------------
   postgres:
     container_name: postgres
