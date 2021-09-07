@@ -48,45 +48,47 @@ services:
   portainer:
     image: portainer/portainer:linux-amd64-1.21.0
     container_name: portainer
+    restart: always
     command: --no-auth
+    ports:
+      - 9001:9000
     networks:
       - devstacknetwork
-    extra_hosts:
-      - ${DC_HOSTNAME}:${DC_HOSTIP}
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+    - /var/run/docker.sock:/var/run/docker.sock 
+    - ${DC_BASE_DATA_DIR}/portainer-data:/data
 
 # ------------------------------------------------------------------------------
   postgres:
+    image: postgres
     container_name: postgres
-    build: postgres
-    extra_hosts:
-      - ${DC_HOSTNAME}:${DC_HOSTIP}
+    ports:
+      - 5432:5432
+    restart: always    
     environment:
-      - POSTGRES_PASSWORD=admin
       - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=admin
     networks:
       - devstacknetwork
     volumes:
-      - ${DC_BASE_DATA_DIR}/postgres-db/postgresql:/var/lib/postgresql
-      # This needs explicit mapping due to
-      # https://github.com/docker-library/postgres/blob/4e48e3228a30763913ece952c611e5e9b95c8759/Dockerfile.template#L52
-      # there is ENV PGDATA /var/lib/postgresql/data
-      - ${DC_BASE_DATA_DIR}/postgres-db/postgresql_data:/var/lib/postgresql/data
+      - ${DC_BASE_DATA_DIR}/postgres-data/postgresql:/var/lib/postgresql
+      - ${DC_BASE_DATA_DIR}/postgres-data/postgresql-data:/var/lib/postgresql/data
+
 # ------------------------------------------------------------------------------
-  jenkins:
-    build: 
-      context: jenkins-fat
-      args:
-        JENKINS_LTS_VERSION: ${JENKINS_LTS}
-    container_name: jenkins-fat
-    extra_hosts:
-      - ${DC_HOSTNAME}:${DC_HOSTIP}
+jenkins:
+    image:
+       - jenkins/jenkins:lts-jdk11
+    container_name: jenkins-lts
+    restart: always
+    ports:
+      - 8087:8080
+      - 50000:50000
     networks:
       - devstacknetwork
     volumes:
-      - ${DC_BASE_DATA_DIR}/jenkins:/var/jenkins_home
+      - ${DC_BASE_DATA_DIR}/jenkins-data:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
+
 # ------------------------------------------------------------------------------
 #  gitlab:
 #    image: 'gitlab/gitlab-ce:12.0.2-ce.0'
@@ -120,15 +122,18 @@ services:
   nexus:
     image: sonatype/nexus3:3.17.0
     container_name: sonatype-nexus3
-    extra_hosts:
-      - ${DC_HOSTNAME}:${DC_HOSTIP}
+    restart: always
+    ports:
+      - 8081:8081
+#	Port for nexus docker repository
+      - 8085:8085  
     networks:
       - devstacknetwork
     environment:
       - NEXUS_CONTEXT=nexus
+      - INSTALL4J_ADD_VM_PARAMS=-Xms2703m -Xmx2703m -XX:MaxDirectMemorySize=2703m 
     volumes:
-      - ${DC_BASE_DATA_DIR}/nexus-data:/nexus-data
-
+      - ${DC_BASE_DATA_DIR}/nexus-data:/nexus-data sonatype/nexus3 
 # ------------------------------------------------------------------------------
 #  gitlabrunner:
 #    build: gitlabrunner
@@ -146,7 +151,26 @@ services:
 #    volumes:
 #      - ${DC_BASE_DATA_DIR}/gitlab-runner/config:/etc/gitlab-runner
 #      - /var/run/docker.sock:/var/run/docker.sock
-
-      
+# ------------------------------------------------------------------------------
+   sonarqube: 
+    image: sonarqube:7.1 
+    container_name: sonarcube
+    depends_on: # start  proxy after all the others
+      - postgres
+    ports:
+        - 9010:9000
+    networks:
+       - devstacknetwork
+    environment:
+      - sonar.jdbc.url=jdbc:postgresql://postgres/postgres  
+      - sonar.jdbc.username=postgres
+      - sonar.jdbc.password=admin
+    volumes:
+      - ${DC_BASE_DATA_DIR}/sonar/sonarqube-conf:/opt/sonarqube/conf
+      - ${DC_BASE_DATA_DIR}/sonar/sonarqube-data:/opt/sonarqube/data
+      - ${DC_BASE_DATA_DIR}/sonar/sonarqube-extensions:/opt/sonarqube/extensions
+      - ${DC_BASE_DATA_DIR}/sonar/sonarqube-bundled-plugins:/opt/sonarqube/lib/bundled-plugins
+      - ${DC_BASE_DATA_DIR}/sonar/sonarqube-logs:/opt/sonarqube/logs
+     
     
       
