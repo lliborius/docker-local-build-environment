@@ -1,8 +1,8 @@
 pipeline {
 	agent any
 	tools {
-		maven 'maven LATEST'
-		ant 'ant latest'
+		maven 'Maven Latest'
+		ant 'Ant LATEST'
 	} 
 		environment {
         SCM_CREDENTIALS = credentials('Jenkins_GIT')
