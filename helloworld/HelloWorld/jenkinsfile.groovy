@@ -25,5 +25,6 @@ pipeline {
             	sh "mvn clean install package -f helloworld/HelloWorld/pom.xml -e -U -fae -DenableJenkinsProfile=true -DfailIfNoTests=false -DskipTests=false -Dapplication.buildNumber=${BUILD_NUMBER}"
             }
 			
-		 }		
+	 }		
 }
+   }
