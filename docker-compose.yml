@@ -127,7 +127,7 @@ services:
     environment:
       - NEXUS_CONTEXT=nexus
     volumes:
-      - ${DC_BASE_DATA_DIR}/pvc/nexus-data:/nexus-data
+      - ${DC_BASE_DATA_DIR}/nexus-data:/nexus-data
 
 # ------------------------------------------------------------------------------
 #  gitlabrunner:
