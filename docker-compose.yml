@@ -7,8 +7,6 @@
 #
 version: "3"
 
-####test
-
 networks:
   devstacknetwork:
     driver: bridge
