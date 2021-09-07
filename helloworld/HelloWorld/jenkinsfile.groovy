@@ -17,7 +17,7 @@ pipeline {
       stage('Build') {
          steps {
             // get the application version from pom
-            pushPomVersionToEnv('helloworld/HelloWorld/pom.xml')
+            //pushPomVersionToEnv('helloworld/HelloWorld/pom.xml')
             // Run the maven build
             ansiColor('xterm') {
             	sh "mvn -f helloworld/HelloWorld/pom.xml -B versions:set -DnewVersion=${APP_SNAPSHOT_VERSION} -DenableJenkinsProfile=true"
