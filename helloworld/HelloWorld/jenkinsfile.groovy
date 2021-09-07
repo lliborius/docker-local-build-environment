@@ -1,9 +1,8 @@
 pipeline {
 	agent any
 	tools {
-		maven 'maven LATEST'
-		ant 'ant latest'
-		jdk 'AIX64 JDK8'
+		maven 'Maven Latest'
+		ant 'Ant LATEST'
 	} 
 		environment {
         SCM_CREDENTIALS = credentials('Jenkins_GIT')
@@ -18,12 +17,11 @@ pipeline {
       stage('Build') {
          steps {
             // get the application version from pom
-            pushPomVersionToEnv('helloworld/HelloWorld/pom.xml')
+            //pushPomVersionToEnv('helloworld/HelloWorld/pom.xml')
             // Run the maven build
-            ansiColor('xterm') {
-            	sh "mvn -f helloworld/HelloWorld/pom.xml -B versions:set -DnewVersion=${APP_SNAPSHOT_VERSION} -DenableJenkinsProfile=true"
-            	sh "mvn clean install package -f helloworld/HelloWorld/pom.xml -e -U -fae -DenableJenkinsProfile=true -DfailIfNoTests=false -DskipTests=false -Dapplication.buildNumber=${BUILD_NUMBER}"
+            // ansiColor('xterm') {
+            	sh "mvn clean install package -f helloworld/HelloWorld/pom.xml"
             }
-			
-		 }		
-}
+	 }
+      }	
+   }
