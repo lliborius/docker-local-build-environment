@@ -14,8 +14,11 @@ networks:
 services:
 # ------------------------------------------------------------------------------
   ngnix:
-     container_name: nginx-reverse
-     build: nginx-reverse
+     container_name: nginx-revers
+     image: nginx
+     restart: always
+     networks:
+       - devstacknetwork
      ports:
        - 80:80      # http://
        - 5432:5432  # Default-Port of the Postges DB passing jdbc-Connections to the postgres-Container 
@@ -25,10 +28,16 @@ services:
      depends_on: # start  proxy after all the others
 #       - gitlab
        - jenkins
+	   condition: service_started
        - nexus
+	   condition: service_started
        - portainer
-     networks:
-       - devstacknetwork
+	   condition: service_started
+       - postgres
+	   condition: service_started
+       - sonarqube
+	   condition: service_started
+
 # ------------------------------------------------------------------------------
 #  regweb:
 #    container_name: docker-registry-web
@@ -154,7 +163,8 @@ jenkins:
     image: sonarqube:7.1 
     container_name: sonarcube
     depends_on: # start  proxy after all the others
-      - postgres
+      - postgres:
+	  condition: service_started
     ports:
         - 9010:9000
     networks:
