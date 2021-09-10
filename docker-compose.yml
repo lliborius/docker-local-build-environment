@@ -27,15 +27,15 @@ services:
      #command: ["nginx-debug", "-g", "daemon off;"]  # Start nginx in debug to see whats going on    
      depends_on: # start  proxy after all the others
 #       - gitlab
-       - jenkins
+        jenkins:
 	   condition: service_started
-       - nexus
+        nexus:
 	   condition: service_started
-       - portainer
+        portainer:
 	   condition: service_started
-       - postgres
+        postgres
 	   condition: service_started
-       - sonarqube
+        sonarqube
 	   condition: service_started
 
 # ------------------------------------------------------------------------------
@@ -163,7 +163,7 @@ jenkins:
     image: sonarqube:7.1 
     container_name: sonarcube
     depends_on: # start  proxy after all the others
-      - postgres:
+      postgres:
 	  condition: service_started
     ports:
         - 9010:9000
