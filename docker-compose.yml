@@ -6,179 +6,114 @@
 # Consider to Backup  ${DC_BASE_DATA_DIR}
 #
 version: "3"
-
 networks:
   devstacknetwork:
     driver: bridge
 
 services:
-# ------------------------------------------------------------------------------
-  ngnix:
-     container_name: nginx-revers
-     image: nginx
-     restart: always
-     networks:
-       - devstacknetwork
-     ports:
-       - 80:80      # http://
-       - 5432:5432  # Default-Port of the Postges DB passing jdbc-Connections to the postgres-Container 
-#       - 2222:2222  # ssh port of gitlab (ssh://git@myHOST:2222/scott/foo.git)
-#       - 5555:5555  # Gitlab Docker Registry do NOT use 5000, this is an internal PORT of the gitlab-ce Image
-     #command: ["nginx-debug", "-g", "daemon off;"]  # Start nginx in debug to see whats going on    
-     depends_on: # start  proxy after all the others
-#       - gitlab
-        jenkins:
-	   condition: service_started
-        nexus:
-	   condition: service_started
-        portainer:
-	   condition: service_started
-        postgres
-	   condition: service_started
-        sonarqube
-	   condition: service_started
-
-# ------------------------------------------------------------------------------
-#  regweb:
-#    container_name: docker-registry-web
-#    image: hyper/docker-registry-web:v0.1.2
-#    networks:
-#      - devstacknetwork
-#    extra_hosts:
-#      - ${DC_HOSTNAME}:${DC_HOSTIP}
-#    environment:
-#      - REGISTRY_URL=http://${DC_HOSTNAME}:5000/v2  
-#      - REGISTRY_NAME=Your docker-local-build-registry@${DC_HOSTNAME}:5000
-#      - REGISTRY_READONLY=false 
-#      - REGISTRY_CONTEXT_PATH=/regweb
-# ------------------------------------------------------------------------------
-  portainer:
-    image: portainer/portainer:linux-amd64-1.21.0
-    container_name: portainer
-    restart: always
-    command: --no-auth
-    ports:
-      - 9001:9000
-    networks:
-      - devstacknetwork
-    volumes:
-    - /var/run/docker.sock:/var/run/docker.sock 
-    - ${DC_BASE_DATA_DIR}/portainer-data:/data
-
-# ------------------------------------------------------------------------------
-  postgres:
-    image: postgres
-    container_name: postgres
-    ports:
-      - 5432:5432
-    restart: always    
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=admin
-    networks:
-      - devstacknetwork
-    volumes:
-      - ${DC_BASE_DATA_DIR}/postgres-data/postgresql:/var/lib/postgresql
-      - ${DC_BASE_DATA_DIR}/postgres-data/postgresql-data:/var/lib/postgresql/data
-
-# ------------------------------------------------------------------------------
-jenkins:
-    image:
-       - jenkins/jenkins:lts-jdk11
+  jenkins:
+    image: jenkins/jenkins:lts-jdk11
     container_name: jenkins-lts
-    restart: always
     ports:
       - 8087:8080
       - 50000:50000
     networks:
       - devstacknetwork
     volumes:
-      - ${DC_BASE_DATA_DIR}/jenkins-data:/var/jenkins_home
+      - ${DC_BASE_DATA_DIR}/jenkins_data:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
-
-# ------------------------------------------------------------------------------
-#  gitlab:
-#    image: 'gitlab/gitlab-ce:12.0.2-ce.0'
-#    container_name: gitlab-ce
-#    extra_hosts:
-#      - ${DC_HOSTNAME}:${DC_HOSTIP}
-#    networks:
-#      - devstacknetwork
-#    environment:
-#      GITLAB_OMNIBUS_CONFIG: |
-#        external_url 'http://${DC_HOSTNAME}/gitlab'
-#        gitlab_rails['initial_root_password'] = "gitlab4me"
-#        gitlab_rails['initial_shared_runners_registration_token'] = "s3cretToken4Runner"
-#        gitlab_rails['gitlab_shell_ssh_port'] = 2222
-#        # docker-registry config
-#        registry_external_url 'https://${DC_HOSTNAME}:5555'
-#        registry_nginx['listen_port'] = 5555
-#        registry_nginx['listen_https'] = true
-#        # SSL config just for the docker-registry need
-#        nginx['ssl_certificate'] = "/etc/gitlab/ssl/${DC_HOSTNAME}.crt"
-#        nginx['ssl_certificate_key'] = "/etc/gitlab/ssl/${DC_HOSTNAME}.key"
-#        registry_nginx['proxy_set_headers'] = {
-#        "X-Forwarded-Proto" => "https",
-#        "X-Forwarded-Ssl" => "on"
-#        }
-#    volumes:
-#      - ${DC_BASE_DATA_DIR}/gitlab/config:/etc/gitlab
-#      - ${DC_BASE_DATA_DIR}/gitlab/logs:/var/log/gitlab
-#      - ${DC_BASE_DATA_DIR}/gitlab/data:/var/opt/gitlab
-## ------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+  portainer:
+    image: portainer/portainer:linux-amd64-1.21.0
+    container_name: portainer
+    command: --no-auth
+    ports:
+      - 9001:9000
+    networks:
+      - devstacknetwork
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+    - ${DC_BASE_DATA_DIR}/portainer_data:/data
+#-------------------------------------------------------------------------------
   nexus:
-    image: sonatype/nexus3:3.17.0
+    image: 162.248.163.127:8085/nexus3-20210913
     container_name: sonatype-nexus3
-    restart: always
     ports:
       - 8081:8081
-#	Port for nexus docker repository
-      - 8085:8085  
+      - 8085:8085
     networks:
       - devstacknetwork
     environment:
       - NEXUS_CONTEXT=nexus
-      - INSTALL4J_ADD_VM_PARAMS=-Xms2703m -Xmx2703m -XX:MaxDirectMemorySize=2703m 
+      - INSTALL4J_ADD_VM_PARAMS=-Xms2703m -Xmx2703m -XX:MaxDirectMemorySize=2703m -Djava.util.prefs.userRoot=/nexus-data
     volumes:
-      - ${DC_BASE_DATA_DIR}/nexus-data:/nexus-data sonatype/nexus3 
-# ------------------------------------------------------------------------------
-#  gitlabrunner:
-#    build: gitlabrunner
-#    container_name: gitlabrunner
-#    network_mode: "host"
-#    privileged: true
-#    extra_hosts:
-#      - ${DC_HOSTNAME}:${DC_HOSTIP}
-#    environment:
-#      - GITLAB_URL=http://${DC_HOSTNAME}/gitlab
-#      - HOSTNAME=${DC_HOSTNAME}
-#      - HOSTIP=${DC_HOSTIP}
-#      - REGISTER_TOKEN=s3cretToken4Runner
-#      - REGISTER_TRYS=60 # every 10 seconds a try to register the runner..gitlab takes a long time to startup
-#    volumes:
-#      - ${DC_BASE_DATA_DIR}/gitlab-runner/config:/etc/gitlab-runner
-#      - /var/run/docker.sock:/var/run/docker.sock
-# ------------------------------------------------------------------------------
-   sonarqube: 
-    image: sonarqube:7.1 
+      - ${DC_BASE_DATA_DIR}/nexus_data:/nexus-data sonatype/nexus3
+#-------------------------------------------------------------------------------
+  postgres:
+    image: postgres
+    container_name: postgres
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=admin
+      - PGDATA=/var/lib/postgreql/data/db-files/
+    networks:
+      - devstacknetwork
+    volumes:
+      - /test/postgres-data/postgresql:/var/lib/postgresql
+      - /test/postgres-data/postgresql-data:/var/lib/postgresql/data
+#-------------------------------------------------------------------------------
+  sonarqube:
+    image: sonarqube:7.1
     container_name: sonarcube
-    depends_on: # start  proxy after all the others
-      postgres:
-	  condition: service_started
     ports:
         - 9010:9000
     networks:
        - devstacknetwork
+    depends_on:
+       - postgres
     environment:
-      - sonar.jdbc.url=jdbc:postgresql://postgres/postgres  
+      - sonar.jdbc.url=jdbc:postgresql://postgres/postgres 
       - sonar.jdbc.username=postgres
       - sonar.jdbc.password=admin
     volumes:
-      - ${DC_BASE_DATA_DIR}/sonar/sonarqube-conf:/opt/sonarqube/conf
-      - ${DC_BASE_DATA_DIR}/sonar/sonarqube-data:/opt/sonarqube/data
-      - ${DC_BASE_DATA_DIR}/sonar/sonarqube-extensions:/opt/sonarqube/extensions
-      - ${DC_BASE_DATA_DIR}/sonar/sonarqube-bundled-plugins:/opt/sonarqube/lib/bundled-plugins
-      - ${DC_BASE_DATA_DIR}/sonar/sonarqube-logs:/opt/sonarqube/logs
-     
+      - /test/sonar/sonarqube-conf:/opt/sonarqube/conf
+      - /test/sonar/sonarqube-data:/opt/sonarqube/data
+      - /test/sonar/sonarqube-extensions:/opt/sonarqube/extensions
+      - /test/sonar/sonarqube-bundled-plugins:/opt/sonarqube/lib/bundled-plugins
+# ------------------------------------------------------------------------------
+  ngnix:
+     image: nginx
+     container_name: nginx
+     ports:
+       - 80:80
+       - 5434:5432
+     networks:
+       - devstacknetwork
+     depends_on:
+       - nexus
+       - postgres
+       - portainer
+       - sonarqube
+# ------------------------------------------------------------------------------
+#  tomcat:
+#    image: tomcat:9.0
+#    container_name: pcv-tomcat
+#    extra_hosts:
+#      - ${DC_HOSTNAME}:${DC_HOSTIP}
+#    ports:
+#      - "8888:8080"	
+#    networks:
+#      - devstacknetwork
+#    environment:
+#      - CATALINA_BASE=/usr/local/tomcat
+#      - CATALINA_HOME=/usr/local/tomcat
+#      - CATALINA_TMPDIR=/usr/local/tomcat/temp
+#      - JRE_HOME=/usr
+#      - CLASSPATH=/usr/local/tomcat/bin/bootstrap.jar:/usr/local/tomcat/bin/tomcat-juli.jar
+
+
+      
     
       
